@@ -1,30 +1,20 @@
+
 import { use, useEffect, useState, useCallback } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "@react-navigation/native";
 import ScannedData from "./ScannedData";
-import * as Location from "expo-location";
+
 
 export default function QRScanner({ navigation }) {
+ 
   const [permission, requestPermission] = useCameraPermissions();
 
   const [scanned, setScanned] = useState(false);
 
   const [qrData, setQrData] = useState("");
 
-  const [location, setLocation] = useState(null);
 
-  const [locationPermission, setLocationPermission] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status === "granted") {
-        setLocationPermission(true);
-      }
-    })();
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,14 +42,13 @@ export default function QRScanner({ navigation }) {
   // QR Scan Function
   const handleBarcodeScanned = async ({ data }) => {
     setScanned(true);
-    const locationData = await Location.getCurrentPositionAsync({});
-    setLocation(locationData);
+    
     setQrData(data);
 
+
     
-    navigation.navigate("ScannedData", {
+    navigation.replace("ScannedData", {
       qrData: data,
-      location: locationData,
     });
   };
 
@@ -114,5 +103,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-
 
