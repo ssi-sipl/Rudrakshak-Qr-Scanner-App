@@ -4,341 +4,741 @@ import {
   View,
   TextInput,
   ScrollView,
-  navigation,
+  Animated,
+  Alert,
 } from "react-native";
 
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+} from "react";
 
-import {db} from "../database/database.js";
+import { db } from "../database/database.js";
+
 import * as Location from "expo-location";
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
-import { initDatabase } from "../database/initDatabase.js";
 
 
+// INPUT COMPONENT
+const InputField = ({
+  label,
+  value,
+  setValue,
+  editableInput = true,
+}) => (
 
-const InputField = ({ label, value, setValue, editableInput = true }) => (
   <View className="mb-5">
-    <Text className="mb-2 text-sm font-semibold tracking-widest text-cyan-400">
+
+    <Text
+      className="mb-2 text-sm font-medium"
+      style={{
+        color: "#6B7280",
+      }}
+    >
       {label}
     </Text>
 
     <TextInput
       value={value}
+
       onChangeText={setValue}
+
       editable={editableInput}
-      placeholderTextColor="#64748b"
-      className={`rounded-2xl border border-cyan-400/20 bg-slate-900 px-4 py-4 text-base text-white ${
-        !editableInput ? "opacity-60" : ""
-      }`}
+
+      placeholderTextColor="#9CA3AF"
+
+      className="rounded-full px-5 py-4 text-base"
+
+      style={{
+        backgroundColor: editableInput
+          ? "#F3F7F8"
+          : "#E8EEF0",
+
+        color: "#111827",
+
+        opacity: editableInput
+          ? 1
+          : 0.7,
+      }}
     />
+
   </View>
 );
-export default function ScannedData({ route, navigation }) {
 
-  
-  const [editable, setEditable] = useState(false);
+export default function ScannedData({
+  route,
+  navigation,
+}) {
 
-  const { qrData } = route.params;
+  const fadeAnim =
+    useRef(new Animated.Value(0)).current;
 
-  const parsedData = JSON.parse(qrData);
+  // ROUTE PARAMS
+  const {
+    qrData,
+    sensorData,
+    editMode = false,
 
-  const [sensorId, setSensorId] = useState(parsedData.sensorId);
+    projectId,
+    projectName,
 
-  const [name, setName] = useState(parsedData.name);
+    areaId,
+    areaName,
+  } = route.params;
 
-  const [sensorType, setSensorType] = useState(parsedData.sensorType);
+  // EDITABLE STATE
+  const [editable, setEditable] =
+    useState(editMode);
 
-  const [ipAddress, setIpAddress] = useState(parsedData.ipAddress);
+  // PARSE DATA
+ let parsedData;
 
-  const [rtspUrl, setRtspUrl] = useState(parsedData.rtspUrl);
+if (sensorData) {
 
-  const [battery, setBattery] = useState(parsedData.battery);
+  parsedData = sensorData;
 
-  const [status, setStatus] = useState(parsedData.status);
+} else if (qrData) {
 
-  const [locationfetch, setLocationfetch] = useState(null);
+  parsedData = JSON.parse(qrData);
 
-  const [latitude, setLatitude] = useState(null);
+} else {
 
-  const [longitude, setLongitude] = useState(null);
+  parsedData = {};
+}
 
-  const [activeShuruMode, setActiveShuruMode] = useState(parsedData.activeShuruMode);
+  // STATES
+  const [sensorId, setSensorId] =
+    useState(parsedData.sensorId);
 
-  const [fetching, setFetching] = useState(false);
+  const [name, setName] =
+    useState(parsedData.name);
 
-  const [accuracy, setAccuracy] = useState(null);
+  const [sensorType, setSensorType] =
+    useState(parsedData.sensorType);
 
-  console.log("Parsed QR Data:", parsedData);
-  // Save Data
+  const [ipAddress, setIpAddress] =
+    useState(parsedData.ipAddress);
+
+  const [rtspUrl, setRtspUrl] =
+    useState(parsedData.rtspUrl);
+
+  const [battery, setBattery] =
+    useState(parsedData.battery);
+
+  const [status, setStatus] =
+    useState(parsedData.status);
+
+  const [latitude, setLatitude] =
+    useState(parsedData.latitude || null);
+
+  const [longitude, setLongitude] =
+    useState(parsedData.longitude || null);
+
+  const [activeShuruMode, setActiveShuruMode] =
+    useState(parsedData.activeShuruMode);
+
+  const [fetching, setFetching] =
+    useState(false);
+
+  const [accuracy, setAccuracy] =
+    useState(null);
+
+  // ANIMATION
+  useEffect(() => {
+
+    fadeAnim.setValue(0);
+
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+  }, []);
+
+  // SAVE SENSOR
   const saveDataIntoDatabase = () => {
+
     try {
+
+      // VALIDATION
+      if (
+        !sensorId ||
+        !name ||
+        !sensorType ||
+        !ipAddress ||
+        !rtspUrl ||
+        !battery ||
+        !status ||
+        !activeShuruMode
+      ) {
+
+        Alert.alert(
+          "Missing Fields",
+          "Please fill all fields"
+        );
+
+        return;
+      }
+
+      // IP VALIDATION
+      const ipRegex =
+        /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$/;
+
+      if (!ipRegex.test(ipAddress)) {
+
+        Alert.alert(
+          "Invalid IP",
+          "Please enter valid IP address"
+        );
+
+        return;
+      }
+
+      // RTSP VALIDATION
+      const rtspRegex =
+        /^rtsp:\/\/.+/;
+
+      if (!rtspRegex.test(rtspUrl)) {
+
+        Alert.alert(
+          "Invalid RTSP URL",
+          "RTSP URL must start with rtsp://"
+        );
+
+        return;
+      }
+
+      // BATTERY VALIDATION
+      const batteryRegex =
+        /^(100|[1-9]?[0-9])$/;
+
+      if (!batteryRegex.test(battery)) {
+
+        Alert.alert(
+          "Invalid Battery",
+          "Battery should be between 0 to 100"
+        );
+
+        return;
+      }
+
+      // LOCATION CHECK
+      if (
+        latitude == null ||
+        longitude == null
+      ) {
+
+        Alert.alert(
+          "Location Missing",
+          "Please fetch location first"
+        );
+
+        return;
+      }
+
+      // SAVE SENSOR
       db.runSync(
-  `INSERT OR REPLACE INTO scanned_data (
-    sensorId,
-    name,
-    sensorType,
-    ipAddress,
-    rtspUrl,
-    battery,
-    status,
-    latitude,
-    longitude,
-    activeShuruMode,
-    syncedLocally,
-    syncedCloud
-  )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [
-    sensorId,
-    name,
-    sensorType,
-    ipAddress,
-    rtspUrl,
-    battery,
-    status,
-    latitude,
-    longitude,
-    activeShuruMode,
-    0,
-    0,
-  ],
-);
-      console.log(
-        "Data saved into database successfully! Location data updated.",
+        `
+        INSERT OR REPLACE INTO sensors (
+          area_id,
+          sensorId,
+          name,
+          sensorType,
+          ipAddress,
+          rtspUrl,
+          battery,
+          status,
+          latitude,
+          longitude,
+          activeShuruMode,
+          syncedLocally,
+          syncedCloud
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          areaId,
+          sensorId,
+          name,
+          sensorType,
+          ipAddress,
+          rtspUrl,
+          battery,
+          status,
+          latitude,
+          longitude,
+          activeShuruMode,
+          0,
+          0,
+        ]
       );
-      alert("Data saved successfuly");
-      navigation.replace("Home");
+
+      Alert.alert(
+        "Success",
+        editMode
+          ? "Sensor updated successfully"
+          : "Sensor saved successfully"
+      );
+
+      // NAVIGATION
+      navigation.replace(
+  "SensorScreen",
+  {
+    projectId,
+    projectName,
+    areaId,
+    areaName,
+  }
+);
+
     } catch (err) {
-      console.error(err);
-      alert("Failed");
+
+      console.log(err);
+
+      Alert.alert(
+        "Error",
+        "Failed to save sensor"
+      );
     }
   };
 
-  //Location Permmission
-  const getLocationPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      console.log("Location permission denied");
-      return false;
-    }
-    return true;
-  };
+  // LOCATION PERMISSION
+  const getLocationPermission =
+    async () => {
 
-  
-  //Location Fetching with accuracy check
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
 
+      return status === "granted";
+    };
+
+  // FETCH LOCATION
   const fetchLocationData = async () => {
+
     setFetching(true);
 
-    console.log("Fetching location data...");
+    const granted =
+      await getLocationPermission();
 
-    const granted = await getLocationPermission();
+    if (!granted) {
 
-    if (granted) {
-      const subscription = await Location.watchPositionAsync(
+      setFetching(false);
+
+      Alert.alert(
+        "Permission Required",
+        "Location permission is needed"
+      );
+
+      return;
+    }
+
+    const subscription =
+      await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.BestForNavigation,
+          accuracy:
+            Location.Accuracy.BestForNavigation,
+
           timeInterval: 1000,
+
           distanceInterval: 1,
         },
 
         (location) => {
-          const currentAccuracy = location.coords.accuracy;
 
-          console.log(currentAccuracy);
+          const currentAccuracy =
+            location.coords.accuracy;
 
           setAccuracy(currentAccuracy);
 
           if (currentAccuracy <= 20) {
-            console.log("20 meter accuracy reached");
 
             subscription.remove();
 
             setFetching(false);
 
-            setLocationfetch(location);
+            setLatitude(
+              location.coords.latitude
+            );
 
-            setLongitude(location.coords.longitude);
-
-            setLatitude(location.coords.latitude);
+            setLongitude(
+              location.coords.longitude
+            );
           }
-        },
+        }
       );
-    } else {
-      setFetching(false);
-
-      alert("Location permission is required.");
-    }
   };
 
   return (
-    <ScrollView className="flex-1 bg-slate-950">
-      {/* Glow */}
-      <View className="absolute left-10 top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
 
-      <View className="px-5 pb-20 pt-10">
-        {/* Header */}
-        <View className="mb-10 items-center">
-          <Text className="text-4xl font-extrabold tracking-widest text-cyan-400">
-            DATA TERMINAL
-          </Text>
+    <ScrollView
+      className="flex-1"
+      style={{
+        backgroundColor: "#EEF3F4",
+      }}
+      showsVerticalScrollIndicator={false}
+    >
 
-          <Text className="mt-3 text-center text-slate-400">
-            QR Sensor Information Panel
-          </Text>
-        </View>
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+        }}
+      >
 
-        {/* View Mode */}
-        {!editable ? (
-          <View className="rounded-3xl border border-cyan-400/20 bg-slate-900 p-5">
-            <Text className="mb-6 text-center text-2xl font-bold text-cyan-300">
-              Sensor Details
-            </Text>
+        <View className="px-5 pb-12 pt-14">
 
-            {[
-              ["Sensor ID", sensorId],
-              ["Name", name],
-              ["Sensor Type", sensorType],
-              ["IP Address", ipAddress],
-              ["RTSP URL", rtspUrl],
-              ["Battery", battery],
-              ["Status", status],
-              ["Latitude", latitude],
-              ["Longitude", longitude],
-              ["ActiveShuruMode", activeShuruMode]
-            ].map(([label, value]) => (
-              <View
-                key={label}
-                className="mb-4 rounded-2xl border border-slate-800 bg-slate-950 p-4"
-              >
-                <Text className="mb-1 text-xs tracking-widest text-cyan-400">
-                  {label}
-                </Text>
-
-                <Text className="text-base text-slate-200">{value}</Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          /* Edit Mode */
-          <View className="rounded-3xl border border-cyan-400/20 bg-slate-900 p-5">
-            <Text className="mb-6 text-center text-2xl font-bold text-cyan-300">
-              Edit Sensor Data
-            </Text>
-
-            <InputField
-              label="Sensor ID"
-              value={sensorId}
-              setValue={setSensorId}
-            />
-
-            <InputField label="Name" value={name} setValue={setName} />
-
-            <InputField
-              label="Sensor Type"
-              value={sensorType}
-              setValue={setSensorType}
-            />
-
-            <InputField
-              label="IP Address"
-              value={ipAddress}
-              setValue={setIpAddress}
-            />
-
-            <InputField
-              label="RTSP URL"
-              value={rtspUrl}
-              setValue={setRtspUrl}
-            />
-
-            <InputField label="Battery" value={battery} setValue={setBattery} />
-
-            <InputField label="Status" value={status} setValue={setStatus} />
-
-            <InputField
-              label="Latitude"
-              value={latitude ? latitude.toString() : ""}
-              editableInput={false}
-            />
-
-            <InputField
-              label="Longitude"
-              value={longitude ? latitude.toString() : ""}
-              editableInput={false}
-            />
-
-            <InputField
-              label="ActiveShuruMode"
-              value={activeShuruMode}
-              editableInput={true}
-             setValue={setActiveShuruMode}
-            />
-            
-          </View>
-        )}
-
-        {/* Buttons */}
-        <View className="mt-8 gap-4">
-          {!editable && (
-            <Pressable
-              onPress={() => setEditable(true)}
-              className="rounded-2xl border border-cyan-400/30 bg-slate-900 py-4 active:scale-95"
-            >
-              <Text className="text-center text-lg font-bold tracking-widest text-cyan-400">
-                EDITABLE MODE
-              </Text>
-            </Pressable>
-          )}
-
-          {fetching ? (
-            <View className="rounded-2xl border border-yellow-500 bg-yellow-900 py-6">
-              <Text className="text-center text-lg font-bold text-yellow-300">
-                FETCHING LOCATION...
-              </Text>
-
-              <Text className="mt-2 text-center text-base text-white">
-                <Text>
-                  Current Accuracy:{" "}
-                  {accuracy ? accuracy.toFixed(2) + " meters" : "Calculating"}
-                </Text>
-              </Text>
-            </View>
-          ) : locationfetch == null ? (
-            <Pressable
-              onPress={() => fetchLocationData()}
-              className="rounded-2xl border border-red-500 bg-red-900 py-4 active:scale-95"
-            >
-              <Text className="text-center text-lg font-bold tracking-widest text-red-400">
-                Fetch Location Data
-              </Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={saveDataIntoDatabase}
-              className="rounded-2xl bg-cyan-500 py-4 active:scale-95"
-            >
-              <Text className="text-center text-lg font-bold tracking-widest text-slate-950">
-                SAVE DATA
-              </Text>
-            </Pressable>
-          )}
-
-          <Pressable
-            onPress={() => navigation.navigate("QRScanner")}
-            className="rounded-2xl border border-slate-700 bg-slate-900 py-4 active:scale-95"
+          {/* HEADER */}
+          <Text
+            className="text-4xl font-bold"
+            style={{
+              color: "#111827",
+            }}
           >
-            <Text className="text-center text-lg font-bold tracking-widest text-white">
-              SCAN AGAIN
-            </Text>
-          </Pressable>
+            Sensor Data
+          </Text>
+
+          <Text
+            className="mt-2 text-sm"
+            style={{
+              color: "#6B7280",
+            }}
+          >
+            Review and manage sensor information
+          </Text>
+
+          {/* MAIN CARD */}
+          <View
+            className="mt-8 rounded-[32px] p-5"
+
+            style={{
+              backgroundColor: "#FFFFFF",
+
+              shadowColor: "#000",
+
+              shadowOpacity: 0.04,
+
+              shadowRadius: 10,
+
+              shadowOffset: {
+                width: 0,
+                height: 4,
+              },
+
+              elevation: 2,
+            }}
+          >
+
+            {/* VIEW MODE */}
+            {!editable ? (
+
+              <>
+
+                {[
+                  ["Project", projectName],
+                  ["Area", areaName],
+                  ["Sensor ID", sensorId],
+                  ["Name", name],
+                  ["Sensor Type", sensorType],
+                  ["IP Address", ipAddress],
+                  ["RTSP URL", rtspUrl],
+                  ["Battery", battery],
+                  ["Status", status],
+                  ["Latitude", latitude],
+                  ["Longitude", longitude],
+                  ["Mode", activeShuruMode],
+                ].map(([label, value]) => (
+
+                  <View
+                    key={label}
+
+                    className="mb-4 rounded-[24px] p-4"
+
+                    style={{
+                      backgroundColor: "#F3F7F8",
+                    }}
+                  >
+
+                    <Text
+                      className="mb-1 text-xs font-medium"
+
+                      style={{
+                        color: "#6B7280",
+                      }}
+                    >
+                      {label}
+                    </Text>
+
+                    <Text
+                      className="text-base"
+
+                      style={{
+                        color: "#111827",
+                      }}
+                    >
+                      {value}
+                    </Text>
+
+                  </View>
+                ))}
+
+              </>
+
+            ) : (
+
+              <>
+                <InputField
+                  label="Project"
+                  value={projectName}
+                  editableInput={false}
+                />
+
+                <InputField
+                  label="Area"
+                  value={areaName}
+                  editableInput={false}
+                />
+
+                <InputField
+                  label="Sensor ID"
+                  value={sensorId}
+                  setValue={setSensorId}
+                />
+
+                <InputField
+                  label="Name"
+                  value={name}
+                  setValue={setName}
+                />
+
+                <InputField
+                  label="Sensor Type"
+                  value={sensorType}
+                  setValue={setSensorType}
+                />
+
+                <InputField
+                  label="IP Address"
+                  value={ipAddress}
+                  setValue={setIpAddress}
+                />
+
+                <InputField
+                  label="RTSP URL"
+                  value={rtspUrl}
+                  setValue={setRtspUrl}
+                />
+
+                <InputField
+                  label="Battery"
+                  value={battery}
+                  setValue={setBattery}
+                />
+
+                <InputField
+                  label="Status"
+                  value={status}
+                  setValue={setStatus}
+                />
+
+                <InputField
+                  label="Latitude"
+                  value={
+                    latitude
+                      ? latitude.toString()
+                      : ""
+                  }
+                  editableInput={false}
+                />
+
+                <InputField
+                  label="Longitude"
+                  value={
+                    longitude
+                      ? longitude.toString()
+                      : ""
+                  }
+                  editableInput={false}
+                />
+
+                <InputField
+                  label="Mode"
+                  value={activeShuruMode}
+                  setValue={setActiveShuruMode}
+                />
+              </>
+            )}
+
+          </View>
+
+          {/* ACTION BUTTONS */}
+          <View className="mt-8">
+
+            {!editable && (
+
+              <Pressable
+                onPress={() =>
+                  setEditable(true)
+                }
+
+                className="mb-4 rounded-full py-4 active:scale-95"
+
+                style={{
+                  backgroundColor: "#FFFFFF",
+                }}
+              >
+
+                <Text
+                  className="text-center text-sm font-semibold"
+
+                  style={{
+                    color: "#111827",
+                  }}
+                >
+                  Enable Edit Mode
+                </Text>
+
+              </Pressable>
+            )}
+
+            {/* LOCATION STATUS */}
+            {fetching ? (
+
+              <View
+                className="mb-4 rounded-[28px] p-5"
+
+                style={{
+                  backgroundColor: "#FFF7E8",
+                }}
+              >
+
+                <Text
+                  className="text-center text-base font-semibold"
+
+                  style={{
+                    color: "#B45309",
+                  }}
+                >
+                  Fetching Location...
+                </Text>
+
+                <Text
+                  className="mt-2 text-center text-sm"
+
+                  style={{
+                    color: "#92400E",
+                  }}
+                >
+                  Accuracy:
+                  {" "}
+                  {
+                    accuracy
+                      ? accuracy.toFixed(2)
+                      : "Calculating"
+                  }
+                  m
+                </Text>
+
+              </View>
+
+            ) : latitude == null || longitude == null ? (
+
+              <Pressable
+                onPress={fetchLocationData}
+
+                className="mb-4 rounded-full py-4 active:scale-95"
+
+                style={{
+                  backgroundColor: "#FEE2E2",
+                }}
+              >
+
+                <Text
+                  className="text-center text-sm font-semibold"
+
+                  style={{
+                    color: "#DC2626",
+                  }}
+                >
+                  Fetch Location
+                </Text>
+
+              </Pressable>
+
+            ) : (
+
+              <Pressable
+                onPress={saveDataIntoDatabase}
+
+                className="mb-4 rounded-full py-4 active:scale-95"
+
+                style={{
+                  backgroundColor: "#0F9BA8",
+
+                  shadowColor: "#0F9BA8",
+
+                  shadowOpacity: 0.18,
+
+                  shadowRadius: 8,
+
+                  shadowOffset: {
+                    width: 0,
+                    height: 4,
+                  },
+
+                  elevation: 4,
+                }}
+              >
+
+                <Text className="text-center text-base font-semibold text-white">
+                  {
+                    editMode
+                      ? "Update Sensor"
+                      : "Save Sensor"
+                  }
+                </Text>
+
+              </Pressable>
+            )}
+
+            {/* SCAN AGAIN */}
+            <Pressable
+              onPress={() =>
+                navigation.navigate(
+                  "QRScanner",
+                  {
+                    projectId,
+                    projectName,
+                    areaId,
+                    areaName,
+                  }
+                )
+              }
+
+              className="rounded-full py-4 active:scale-95"
+
+              style={{
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+
+              <Text
+                className="text-center text-sm font-semibold"
+
+                style={{
+                  color: "#111827",
+                }}
+              >
+                Scan Again
+              </Text>
+
+            </Pressable>
+
+          </View>
+
         </View>
 
-        {/* Footer */}
-        <Text className="mt-10 text-center text-xs tracking-[4px] text-slate-600">
-          RUDRAKSHAM QR SECURE TERMINAL
-        </Text>
-      </View>
+      </Animated.View>
+
     </ScrollView>
   );
 }

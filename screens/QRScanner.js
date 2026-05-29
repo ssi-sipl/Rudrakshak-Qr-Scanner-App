@@ -1,56 +1,107 @@
-
-import { use, useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "@react-navigation/native";
-import ScannedData from "./ScannedData";
 
+export default function QRScanner({
+  navigation,
+  route,
+}) {
 
-export default function QRScanner({ navigation }) {
- 
-  const [permission, requestPermission] = useCameraPermissions();
+  // FROM PREVIOUS SCREEN
+  const {
+    projectId,
+    projectName,
+    areaId,
+    areaName,
+  } = route.params;
 
-  const [scanned, setScanned] = useState(false);
+  const [permission, requestPermission] =
+    useCameraPermissions();
 
-  const [qrData, setQrData] = useState("");
+  const [scanned, setScanned] =
+    useState(false);
 
-
-
+  // RESET WHEN SCREEN FOCUSED
   useFocusEffect(
     useCallback(() => {
       setScanned(false);
-      setQrData("");
-    }, []),
+    }, [])
   );
 
-  // Permission Loading
+  // LOADING
   if (!permission) {
     return <View />;
   }
 
-  // Permission Denied
+  // PERMISSION DENIED
   if (!permission.granted) {
     return (
       <View style={styles.center}>
-        <Text style={{ marginBottom: 20 }}>Camera Permission Needed</Text>
+        <Text style={{ marginBottom: 20 }}>
+          Camera Permission Needed
+        </Text>
 
-        <Button title="Grant Permission" onPress={requestPermission} />
+        <Button
+          title="Grant Permission"
+          onPress={requestPermission}
+        />
       </View>
     );
   }
 
-  // QR Scan Function
-  const handleBarcodeScanned = async ({ data }) => {
+  // QR SCAN
+  const handleBarcodeScanned = ({ data }) => {
+
+  try {
+
+    // PREVENT MULTIPLE SCANS
     setScanned(true);
-    
-    setQrData(data);
 
+    // VALIDATE JSON
+    const parsedData = JSON.parse(data);
 
-    
+    // REQUIRED FIELDS CHECK
+    if (
+      !parsedData.sensorId ||
+      !parsedData.name ||
+      !parsedData.sensorType ||
+      !parsedData.ipAddress ||
+      !parsedData.rtspUrl
+    ) {
+
+      alert("Wrong QR Format");
+
+      setTimeout(() => {
+        setScanned(false);
+      }, 1500);
+
+      return;
+    }
+
+    // VALID QR
     navigation.replace("ScannedData", {
       qrData: data,
+
+      projectId,
+      projectName,
+
+      areaId,
+      areaName,
     });
-  };
+
+  } catch (error) {
+
+    console.log(error);
+
+    alert("Invalid QR Code");
+
+    // ENABLE RESCAN
+    setTimeout(() => {
+      setScanned(false);
+    }, 1500);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -59,11 +110,22 @@ export default function QRScanner({ navigation }) {
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
-        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+        onBarcodeScanned={
+          scanned
+            ? undefined
+            : handleBarcodeScanned
+        }
       />
 
+      {/* Bottom */}
       <View style={styles.bottomContainer}>
-        <Text style={styles.title}>Scan QR Code</Text>
+        <Text style={styles.title}>
+          Scan QR Code
+        </Text>
+
+        <Text style={styles.subtitle}>
+          {projectName} • {areaName}
+        </Text>
       </View>
     </View>
   );
@@ -95,12 +157,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  qrText: {
+  subtitle: {
     color: "#00ff99",
-    fontSize: 16,
-    marginBottom: 15,
-    paddingHorizontal: 20,
-    textAlign: "center",
+    fontSize: 14,
   },
 });
-

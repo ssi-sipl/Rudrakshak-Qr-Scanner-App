@@ -1,103 +1,231 @@
 import "./global.css";
-import { StatusBar } from "expo-status-bar";
+
 import {
   NavigationContainer,
-  DarkTheme,
+  DefaultTheme,
 } from "@react-navigation/native";
-import { useEffect } from "react";
 
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import {
+  createNativeStackNavigator,
+} from "@react-navigation/native-stack";
 
-import HomeScreen from "./screens/HomeScreen";
+import {
+  StatusBar,
+} from "expo-status-bar";
+
+import {
+  useEffect,
+} from "react";
+
+// DATABASE
+import {
+  initDatabase,
+  clearDatabase,
+} from "./database/initDatabase";
+
+import {
+  getDataFromDatabase,
+} from "./database/database";
+
+// SCREENS
+import ProjectScreen from "./screens/ProjectScreen";
+
+import AddProjectScreen from "./screens/AddProjectScreen";
+
+import AreaScreen from "./screens/AreaScreen";
+
+import AddAreaScreen from "./screens/AddAreaScreen";
+
+import SensorScreen from "./screens/SensorScreen";
+
 import QRScanner from "./screens/QRScanner";
+
 import ScannedData from "./screens/ScannedData";
-import SyncData from "./screens/SyncData"
-import SynLocally from "./screens/SyncLocally"
+
+import SyncData from "./screens/SyncData";
+
 import SyncLocally from "./screens/SyncLocally";
-import { initDatabase } from "./database/initDatabase";
-import { getDataFromDatabase } from "./database/database";
 
-const Stack = createNativeStackNavigator();
 
+const Stack =
+  createNativeStackNavigator();
+
+
+// CUSTOM LIGHT THEME
 const MyTheme = {
-  ...DarkTheme,
+
+  ...DefaultTheme,
 
   colors: {
-    ...DarkTheme.colors,
 
-    primary: "#38bdf8",
-    background: "#020617",
-    card: "#0f172a",
-    text: "#e2e8f0",
-    border: "#1e293b",
-    notification: "#0ea5e9",
+    ...DefaultTheme.colors,
+
+    primary: "#0F9BA8",
+
+    background: "#EEF3F4",
+
+    card: "#FFFFFF",
+
+    text: "#111827",
+
+    border: "#E5E7EB",
+
+    notification: "#0F9BA8",
   },
 };
 
 export default function App() {
 
-  useEffect(()=>
-    {
-      initDatabase();
-      getDataFromDatabase();
-    },[])
-  
+  // INIT DATABASE
+  useEffect(() => {
+
+    initDatabase();
+
+    // clearDatabase();
+
+    getDataFromDatabase();
+
+    console.log("Database Ready");
+
+  }, []);
+
   return (
-    <NavigationContainer theme={MyTheme}>
-      <StatusBar style="light" />
+
+    <NavigationContainer
+      theme={MyTheme}
+    >
+
+      {/* STATUS BAR */}
+      <StatusBar
+        style="dark"
+      />
 
       <Stack.Navigator
+
         screenOptions={{
+
+          // HEADER STYLE
           headerStyle: {
-            backgroundColor: "#0f172a",
+            backgroundColor: "#EEF3F4",
           },
 
-          headerTintColor: "#38bdf8",
+          // TITLE COLOR
+          headerTintColor: "#111827",
 
+          // TITLE STYLE
           headerTitleStyle: {
-            fontWeight: "bold",
-            fontSize: 20,
+            fontWeight: "600",
+            fontSize: 18,
           },
 
+          // HEADER SHADOW REMOVE
+          headerShadowVisible: false,
+
+          // SCREEN BACKGROUND
           contentStyle: {
-            backgroundColor: "#020617",
+            backgroundColor: "#EEF3F4",
           },
 
+          // SMOOTH TRANSITION
           animation: "slide_from_right",
+
+          // HEADER ALIGN
+          headerTitleAlign: "center",
         }}
       >
+
+        {/* PROJECTS */}
         <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-        
+          name="ProjectScreen"
+          component={ProjectScreen}
+
+          options={{
+            title: "Projects",
+          }}
         />
 
+        {/* ADD PROJECT */}
         <Stack.Screen
-          name="SyncLocally"
-          component = {SyncLocally}
+          name="AddProjectScreen"
+          component={AddProjectScreen}
+
+          options={{
+            title: "New Project",
+          }}
         />
 
+        {/* AREAS */}
+        <Stack.Screen
+          name="AreaScreen"
+          component={AreaScreen}
+
+          options={{
+            title: "Areas",
+          }}
+        />
+
+        {/* ADD AREA */}
+        <Stack.Screen
+          name="AddAreaScreen"
+          component={AddAreaScreen}
+
+          options={{
+            title: "New Area",
+          }}
+        />
+
+        {/* SENSORS */}
+        <Stack.Screen
+          name="SensorScreen"
+          component={SensorScreen}
+
+          options={{
+            title: "Sensors",
+          }}
+        />
+
+        {/* QR SCANNER */}
         <Stack.Screen
           name="QRScanner"
           component={QRScanner}
+
           options={{
-            title: "Scanner Core",
+            title: "QR Scanner",
           }}
         />
 
+        {/* SCANNED DATA */}
         <Stack.Screen
           name="ScannedData"
           component={ScannedData}
+
           options={{
-            title: "Scanned Data",
+            title: "Sensor Data",
           }}
         />
 
-        <Stack.Screen 
-        name="SyncData"
-        component={SyncData}
+        {/* CLOUD SYNC */}
+        <Stack.Screen
+          name="SyncData"
+          component={SyncData}
+
+          options={{
+            title: "Cloud Sync",
+          }}
         />
+
+        {/* LOCAL SYNC */}
+        <Stack.Screen
+          name="SyncLocally"
+          component={SyncLocally}
+
+          options={{
+            title: "Local Sync",
+          }}
+        />
+
       </Stack.Navigator>
+
     </NavigationContainer>
   );
 }
