@@ -424,40 +424,7 @@ export default function ProjectScreen({
 
           </Pressable>
 
-          <Pressable
-            onPress={() =>
-              navigation.navigate(
-                "SyncData"
-              )
-            }
-
-            className="mt-4 rounded-[24px] px-5 py-4 active:scale-95"
-
-            style={{
-              backgroundColor: "#DDF4F5",
-            }}
-          >
-
-            <Text
-              className="text-center text-sm font-semibold"
-              style={{
-                color: "#0F9BA8",
-              }}
-            >
-              Internet Sync
-            </Text>
-
-            <Text
-              className="mt-1 text-center text-xs"
-              style={{
-                color: "#4B5563",
-              }}
-            >
-              Sync across devices
-            </Text>
-
-          </Pressable>
-
+          
         </View>
 
       </Animated.View>

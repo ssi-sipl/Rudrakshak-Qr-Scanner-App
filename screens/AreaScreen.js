@@ -5,7 +5,7 @@ import {
   Animated,
   FlatList,
   TextInput,
-  alert
+  Alert
 } from "react-native";
 
 import { useRef, useState, useCallback, useMemo } from "react";
@@ -20,6 +20,7 @@ export default function AreaScreen({ navigation, route }) {
   // ROUTE PARAMS
   const { projectId, projectName } = route.params;
 
+  const [loading, setLoading] = useState(false);
   const [areas, setAreas] = useState([]);
 
   const [search, setSearch] = useState("");

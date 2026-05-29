@@ -1,6 +1,6 @@
-export const initDatabase = async () => {
+import { db } from "./database";
+const initDatabase = async () => {
   try {
-
     await db.execAsync(`
       PRAGMA foreign_keys = ON;
     `);
@@ -17,19 +17,30 @@ export const initDatabase = async () => {
     // AREAS TABLE
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS areas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        project_id INTEGER NOT NULL,
+  project_id INTEGER NOT NULL,
 
-        area_name TEXT NOT NULL,
+  areaId TEXT UNIQUE NOT NULL,
+  area_name TEXT NOT NULL,
 
-        UNIQUE(project_id, area_name),
+  latitude REAL,
+  longitude REAL,
 
-        FOREIGN KEY (project_id)
-        REFERENCES projects(id)
-        ON DELETE CASCADE
-      );
-    `);
+  status TEXT DEFAULT 'Active',
+
+  addedBy TEXT DEFAULT '',
+
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (project_id)
+  REFERENCES projects(id)
+  ON DELETE CASCADE,
+
+  UNIQUE(project_id, area_name)
+);`);
 
     // SENSORS TABLE
     await db.execAsync(`
@@ -63,8 +74,23 @@ export const initDatabase = async () => {
     `);
 
     console.log("Database initialized successfully");
-
   } catch (error) {
     console.log(error);
   }
 };
+
+const clearDatabase = async () => {
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS sensors;
+      DROP TABLE IF EXISTS areas;
+      DROP TABLE IF EXISTS projects;
+    `);
+
+    console.log("Tables dropped successfully");
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export { initDatabase, clearDatabase };

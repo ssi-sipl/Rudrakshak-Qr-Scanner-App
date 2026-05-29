@@ -5,6 +5,8 @@ import {
   DefaultTheme,
 } from "@react-navigation/native";
 
+import { db } from "./database/database";
+
 import {
   createNativeStackNavigator,
 } from "@react-navigation/native-stack";
@@ -20,12 +22,14 @@ import {
 // DATABASE
 import {
   initDatabase,
-  clearDatabase,
+  clearDatabase
 } from "./database/initDatabase";
 
 import {
   getDataFromDatabase,
 } from "./database/database";
+
+
 
 // SCREENS
 import ProjectScreen from "./screens/ProjectScreen";
@@ -42,7 +46,7 @@ import QRScanner from "./screens/QRScanner";
 
 import ScannedData from "./screens/ScannedData";
 
-import SyncData from "./screens/SyncData";
+
 
 import SyncLocally from "./screens/SyncLocally";
 
@@ -76,20 +80,24 @@ const MyTheme = {
 
 export default function App() {
 
-  // INIT DATABASE
-  useEffect(() => {
+useEffect(() => {
+  const setupDatabase = async () => {
+    // console.log("Clearing DB...");
+    // await clearDatabase();
 
-    initDatabase();
+    console.log("Initializing DB...");
+    await initDatabase();
 
-    // clearDatabase();
-
-    getDataFromDatabase();
+    // console.log("Fetching Data...");
+    // await getDataFromDatabase();
 
     console.log("Database Ready");
+  };
 
-  }, []);
+  setupDatabase();
+}, []);
 
-  return (
+return (
 
     <NavigationContainer
       theme={MyTheme}
@@ -205,14 +213,7 @@ export default function App() {
         />
 
         {/* CLOUD SYNC */}
-        <Stack.Screen
-          name="SyncData"
-          component={SyncData}
-
-          options={{
-            title: "Cloud Sync",
-          }}
-        />
+        
 
         {/* LOCAL SYNC */}
         <Stack.Screen

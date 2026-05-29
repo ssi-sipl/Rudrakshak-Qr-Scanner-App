@@ -282,15 +282,7 @@ if (sensorData) {
       );
 
       // NAVIGATION
-      navigation.replace(
-  "SensorScreen",
-  {
-    projectId,
-    projectName,
-    areaId,
-    areaName,
-  }
-);
+      navigation.goBack();
 
     } catch (err) {
 
