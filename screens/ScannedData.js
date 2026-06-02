@@ -7,11 +7,13 @@ import {
   Animated,
   Alert,
 } from "react-native";
+import { Image } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useState, useRef, useEffect } from "react";
 
 import { db } from "../database/database.js";
-
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as Location from "expo-location";
 
 // INPUT COMPONENT
@@ -64,12 +66,11 @@ export default function ScannedData({ route, navigation }) {
 
   const [open, setOpen] = useState(false);
   const [open2, setOpen2] = useState(false);
-  
 
   const [items, setItems] = useState([
     { label: "Active", value: "Active" },
-    { label: "Inactive", value: "Inactive" }
-  ]);;
+    { label: "Inactive", value: "Inactive" },
+  ]);
 
   // PARSE DATA
   let parsedData;
@@ -105,10 +106,19 @@ export default function ScannedData({ route, navigation }) {
     parsedData.activeShuruMode,
   );
 
+  const [sensorImage, setSensorImage] = useState(parsedData.imageUri || null);
+
   const [fetching, setFetching] = useState(false);
 
   const [accuracy, setAccuracy] = useState(null);
 
+  const [bestAccuracy, setBestAccuracy] = useState(null);
+
+  const [bestLocation, setBestLocation] = useState(null);
+
+  const bestAccuracyRef = useRef(Infinity);
+
+  const bestLocationRef = useRef(null);
   // ANIMATION
   useEffect(() => {
     fadeAnim.setValue(0);
@@ -189,11 +199,12 @@ export default function ScannedData({ route, navigation }) {
           latitude,
           longitude,
           activeShuruMode,
-          syncedLocally
+          syncedLocally,
+          imageUri
          
           
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           areaId,
@@ -208,6 +219,7 @@ export default function ScannedData({ route, navigation }) {
           longitude,
           activeShuruMode,
           0,
+          sensorImage,
         ],
       );
 
@@ -233,8 +245,19 @@ export default function ScannedData({ route, navigation }) {
   };
 
   // FETCH LOCATION
+
   const fetchLocationData = async () => {
     setFetching(true);
+
+    setAccuracy(null);
+ 
+    setBestAccuracy(null);
+
+    setBestLocation(null);
+
+    bestAccuracyRef.current = Infinity;
+
+    bestLocationRef.current = null;
 
     const granted = await getLocationPermission();
 
@@ -246,31 +269,80 @@ export default function ScannedData({ route, navigation }) {
       return;
     }
 
-    const subscription = await Location.watchPositionAsync(
+    let subscription;
+
+    subscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.BestForNavigation,
-
         timeInterval: 1000,
-
         distanceInterval: 1,
       },
-
       (location) => {
         const currentAccuracy = location.coords.accuracy;
 
         setAccuracy(currentAccuracy);
 
-        if (currentAccuracy <= 20) {
-          subscription.remove();
+        if (currentAccuracy < bestAccuracyRef.current) {
+          bestAccuracyRef.current = currentAccuracy;
 
-          setFetching(false);
+          bestLocationRef.current = location;
 
-          setLatitude(location.coords.latitude);
+          setBestAccuracy(currentAccuracy);
 
-          setLongitude(location.coords.longitude);
+          setBestLocation(location);
         }
       },
     );
+
+    setTimeout(() => {
+      subscription.remove();
+
+      setFetching(false);
+
+      console.log("Best Location Saved:", bestLocationRef.current);
+
+      if (bestLocationRef.current) {
+        setLatitude(bestLocationRef.current.coords.latitude);
+
+        setLongitude(bestLocationRef.current.coords.longitude);
+      }
+    }, 20000);
+  };
+
+  const captureImage = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 1,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const image = result.assets[0];
+
+      const compressed = await ImageManipulator.manipulateAsync(
+        image.uri,
+        [
+          {
+            resize: {
+              width: 1280,
+            },
+          },
+        ],
+        {
+          compress: 0.5,
+          format: ImageManipulator.SaveFormat.JPEG,
+        },
+      );
+
+      setSensorImage(compressed.uri);
+
+      console.log("Compressed Image:", compressed.uri);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -422,16 +494,24 @@ export default function ScannedData({ route, navigation }) {
                 >
                   Status
                 </Text>
-
-                <DropDownPicker
-                  open={open}
-                  value={status}
-                  items={items}
-                  setOpen={setOpen}
-                  setValue={setStatus}
-                  setItems={setItems}
-                  listMode="SCROLLVIEW"
-                />
+                <View className="mb-4">
+                  <View
+                    style={{
+                      zIndex: 3000,
+                      marginBottom: open ? 100 : 16,
+                    }}
+                  >
+                    <DropDownPicker
+                      open={open}
+                      value={status}
+                      items={items}
+                      setOpen={setOpen}
+                      setValue={setStatus}
+                      setItems={setItems}
+                      listMode="SCROLLVIEW"
+                    />
+                  </View>
+                </View>
                 <InputField
                   label="Latitude"
                   value={latitude ? latitude.toString() : ""}
@@ -444,20 +524,28 @@ export default function ScannedData({ route, navigation }) {
                   editableInput={false}
                 />
 
-                <InputField
-                  label="Mode"
-                  value={activeShuruMode}
-                  setValue={setActiveShuruMode}
-                />
-                <DropDownPicker
-                  open={open2}
-                  value={activeShuruMode}
-                  items={items}
-                  setOpen={setOpen2}
-                  setValue={setActiveShuruMode}
-                  setItems={setItems}
-                  listMode="SCROLLVIEW"
-                />
+                <Text
+                  className="mb-2 text-sm font-medium"
+                  style={{ color: "#6B7280" }}
+                >
+                  ActiveShuru Mode
+                </Text>
+                <View
+                  style={{
+                    zIndex: 2000,
+                    marginBottom: open2 ? 110 : 16,
+                  }}
+                >
+                  <DropDownPicker
+                    open={open2}
+                    value={activeShuruMode}
+                    items={items}
+                    setOpen={setOpen2}
+                    setValue={setActiveShuruMode}
+                    setItems={setItems}
+                    listMode="SCROLLVIEW"
+                  />
+                </View>
               </>
             )}
           </View>
@@ -483,6 +571,36 @@ export default function ScannedData({ route, navigation }) {
               </Pressable>
             )}
 
+            <Pressable
+              onPress={captureImage}
+              className="mb-4 rounded-full py-4"
+              style={{
+                backgroundColor: "#DBEAFE",
+              }}
+            >
+              <Text
+                className="text-center font-semibold"
+                style={{
+                  color: "#1D4ED8",
+                }}
+              >
+                Capture Image
+              </Text>
+            </Pressable>
+
+            {sensorImage && (
+              <Image
+                source={{ uri: sensorImage }}
+                style={{
+                  width: "100%",
+                  height: 200,
+                  borderRadius: 16,
+                  marginBottom: 16,
+                }}
+                resizeMode="cover"
+              />
+            )}
+
             {/* LOCATION STATUS */}
             {fetching ? (
               <View
@@ -500,14 +618,30 @@ export default function ScannedData({ route, navigation }) {
                   Fetching Location...
                 </Text>
 
-                <Text
-                  className="mt-2 text-center text-sm"
-                  style={{
-                    color: "#92400E",
-                  }}
-                >
-                  Accuracy: {accuracy ? accuracy.toFixed(2) : "Calculating"}m
-                </Text>
+                <View className="items-center">
+                  <Text className="text-sm" style={{ color: "#92400E" }}>
+                    Current Accuracy:
+                    {accuracy ? ` ${accuracy.toFixed(2)}m` : " Calculating..."}
+                  </Text>
+
+                  {bestAccuracy && (
+                    <View
+                      className="mt-3 rounded-full px-4 py-2"
+                      style={{
+                        backgroundColor: "#DCFCE7",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#166534",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Best Accuracy: {bestAccuracy.toFixed(2)}m
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             ) : latitude == null || longitude == null ? (
               <Pressable

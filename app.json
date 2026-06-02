@@ -10,14 +10,24 @@
       "supportsTablet": true
     },
     "android": {
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "package": "com.rudrakshak.qrapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-barcode-scanner",
-      "expo-sqlite"
-    ]
+      "expo-sqlite",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "72bd5562-0474-4237-a65f-744861164e2c"
+      }
+    }
   }
 }

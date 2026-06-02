@@ -56,6 +56,7 @@ const initDatabase = async () => {
         rtspUrl TEXT,
         battery TEXT,
         status TEXT,
+        imageUri TEXT,
 
         latitude REAL,
         longitude REAL,
