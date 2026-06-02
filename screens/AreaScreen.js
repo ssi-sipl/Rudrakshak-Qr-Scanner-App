@@ -221,6 +221,23 @@ export default function AreaScreen({ navigation, route }) {
                     {item.area_name}
                   </Text>
 
+                   <Text
+                    className="text-xs font-semibold"
+                    style={{
+                      color: "#111827",
+                    }}
+                  >
+                    {item.areaId}
+                  </Text>
+
+                   <Text
+                    className="mt-1 text-xs"
+                    style={{
+                      color: "#6B7280",
+                    }}
+                  >
+                    {item.addedBy ? `Added by: ${item.addedBy}` : "Added by: N/A"}
+                  </Text>
                   <Text
                     className="mt-1 text-xs"
                     style={{

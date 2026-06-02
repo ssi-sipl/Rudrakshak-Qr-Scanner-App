@@ -70,7 +70,7 @@ export default function SyncLocally() {
       setConnectionStatus(true);
 
       Alert.alert("Success", "Server Connected");
-    } catch(error) {
+    } catch (error) {
       setConnectionStatus(false);
       console.log(error);
 
@@ -122,8 +122,7 @@ export default function SyncLocally() {
       `
       SELECT *
 FROM sensors
-WHERE syncedCloud = 0
-AND area_id IN (${placeholders})`,
+WHERE area_id IN (${placeholders})`,
       updated,
     );
 
@@ -171,20 +170,16 @@ AND area_id IN (${placeholders})`,
         sensors,
       });
 
-      sensors.forEach((item) => {
-        db.runSync(
-          `
-          UPDATE sensors
-          SET syncedCloud = 1
-          WHERE id = ?
-          `,
-          [item.id],
-        );
-      });
+      
+      console.log(response.data);
+      const insertedSensors = response.data.summary.insertedSensors;
+      const duplicatedSensors = response.data.summary.duplicateSensors;
+      console.log(`Inserted: ${insertedSensors}, Duplicates: ${duplicatedSensors}`);
+
 
       setSyncedCount(sensors.length);
 
-      Alert.alert("Success", `${sensors.length} sensors synced`);
+      Alert.alert("Success", `${insertedSensors} sensors synced, ${duplicatedSensors} duplicates ignored.`);
     } catch (error) {
       console.log(error);
 
@@ -455,7 +450,7 @@ AND area_id IN (${placeholders})`,
                 color: "#6B7280",
               }}
             >
-              Sensors Found
+              Total Sensors in Selected Areas to Sync
             </Text>
 
             <Text

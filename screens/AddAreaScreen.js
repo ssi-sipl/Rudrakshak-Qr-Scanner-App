@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 import { useEffect, useRef, useState } from "react";
+import {Picker} from "@react-native-picker/picker";
 
 import { db } from "../database/database";
 
@@ -336,27 +337,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?)
               style={{
                 backgroundColor: "#F3F7F8",
               }}
-            />
-
-            {/* STATUS */}
-            <Text
-              className="mb-2 text-sm font-medium"
-              style={{
-                color: "#6B7280",
-              }}
-            >
-              Status
-            </Text>
-
-            <TextInput
-              placeholder="Active"
-              value={status}
-              onChangeText={setStatus}
-              className="mb-4 rounded-full px-5 py-4"
-              style={{
-                backgroundColor: "#F3F7F8",
-              }}
-            />
+            /> 
 
             {/* ADDED BY */}
             <Text

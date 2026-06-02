@@ -21,7 +21,7 @@ const initDatabase = async () => {
 
   project_id INTEGER NOT NULL,
 
-  areaId TEXT UNIQUE NOT NULL,
+  areaId TEXT NOT NULL,
   area_name TEXT NOT NULL,
 
   latitude REAL,
@@ -60,10 +60,10 @@ const initDatabase = async () => {
         latitude REAL,
         longitude REAL,
 
+
         activeShuruMode TEXT,
 
         syncedLocally INTEGER DEFAULT 0,
-        syncedCloud INTEGER DEFAULT 0,
 
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
