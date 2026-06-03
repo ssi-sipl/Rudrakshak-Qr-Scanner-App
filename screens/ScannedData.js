@@ -138,9 +138,6 @@ export default function ScannedData({ route, navigation }) {
         !sensorId ||
         !name ||
         !sensorType ||
-        !ipAddress ||
-        !rtspUrl ||
-        !battery ||
         !status ||
         !activeShuruMode
       ) {
@@ -153,7 +150,7 @@ export default function ScannedData({ route, navigation }) {
       const ipRegex =
         /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$/;
 
-      if (!ipRegex.test(ipAddress)) {
+      if (ipAddress && !ipRegex.test(ipAddress)) {
         Alert.alert("Invalid IP", "Please enter valid IP address");
 
         return;
@@ -162,7 +159,7 @@ export default function ScannedData({ route, navigation }) {
       // RTSP VALIDATION
       const rtspRegex = /^rtsp:\/\/.+/;
 
-      if (!rtspRegex.test(rtspUrl)) {
+      if (rtspUrl && !rtspRegex.test(rtspUrl)) {
         Alert.alert("Invalid RTSP URL", "RTSP URL must start with rtsp://");
 
         return;
@@ -171,7 +168,7 @@ export default function ScannedData({ route, navigation }) {
       // BATTERY VALIDATION
       const batteryRegex = /^(100|[1-9]?[0-9])$/;
 
-      if (!batteryRegex.test(battery)) {
+      if (battery && !batteryRegex.test(battery)) {
         Alert.alert("Invalid Battery", "Battery should be between 0 to 100");
 
         return;
@@ -471,19 +468,19 @@ export default function ScannedData({ route, navigation }) {
                 />
 
                 <InputField
-                  label="IP Address"
+                  label="IP Address (optional)"
                   value={ipAddress}
                   setValue={setIpAddress}
                 />
 
                 <InputField
-                  label="RTSP URL"
+                  label="RTSP URL (optional)"
                   value={rtspUrl}
                   setValue={setRtspUrl}
                 />
 
                 <InputField
-                  label="Battery"
+                  label="Battery (optional)"
                   value={battery}
                   setValue={setBattery}
                 />

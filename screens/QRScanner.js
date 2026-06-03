@@ -3,6 +3,7 @@ import { View, Text, Button, StyleSheet } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "@react-navigation/native";
 import { PinchGestureHandler } from "react-native-gesture-handler";
+import { decryptData } from "../utils/crypto";
 
 export default function QRScanner({
   navigation,
@@ -64,8 +65,10 @@ export default function QRScanner({
     setScanned(true);
 
     // VALIDATE JSON
-    const parsedData = JSON.parse(data);
 
+    console.log("data before decryption", data);
+    const parsedData = decryptData(data);
+    console.log("data after decryptin", parsedData);
     // REQUIRED FIELDS CHECK
     if (
       !parsedData.sensorId ||
@@ -86,7 +89,7 @@ export default function QRScanner({
 
     // VALID QR
     navigation.replace("ScannedData", {
-      qrData: data,
+      qrData:JSON.stringify(parsedData),
 
       projectId,
       projectName,

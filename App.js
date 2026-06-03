@@ -47,6 +47,7 @@ import QRScanner from "./screens/QRScanner";
 
 import ScannedData from "./screens/ScannedData";
 
+import DataSeed from "./screens/DataSeed";
 
 
 import SyncLocally from "./screens/SyncLocally";
@@ -81,10 +82,11 @@ const MyTheme = {
 
 export default function App() {
 
+  
 useEffect(() => {
   const setupDatabase = async () => {
-    // console.log("Clearing DB...");
-    // await clearDatabase();
+    console.log("Clearing DB...");
+    await clearDatabase();
 
     console.log("Initializing DB...");
     await initDatabase();
@@ -143,6 +145,15 @@ return (
           headerTitleAlign: "center",
         }}
       >
+ 
+
+        {/* <Stack.Screen
+        name="DataSeed"
+        component={DataSeed}
+        options={{
+            title: "DataSeed",
+          }}
+        /> */}
 
         {/* PROJECTS */}
         <Stack.Screen
@@ -155,6 +166,8 @@ return (
         />
 
         {/* ADD PROJECT */}
+
+        
         <Stack.Screen
           name="AddProjectScreen"
           component={AddProjectScreen}
@@ -231,6 +244,6 @@ return (
 
     </NavigationContainer>
     </GestureHandlerRootView>
-    
+
   );
 }
