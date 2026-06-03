@@ -1,5 +1,6 @@
 import "./global.css";
 
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -98,6 +99,7 @@ useEffect(() => {
 }, []);
 
 return (
+  <GestureHandlerRootView style={{ flex: 1 }}>
 
     <NavigationContainer
       theme={MyTheme}
@@ -228,5 +230,7 @@ return (
       </Stack.Navigator>
 
     </NavigationContainer>
+    </GestureHandlerRootView>
+    
   );
 }

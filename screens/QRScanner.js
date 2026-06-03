@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback , useRef} from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "@react-navigation/native";
+import { PinchGestureHandler } from "react-native-gesture-handler";
 
 export default function QRScanner({
   navigation,
@@ -21,6 +22,10 @@ export default function QRScanner({
 
   const [scanned, setScanned] =
     useState(false);
+
+  const [zoom, setZoom] = useState(0);
+
+  const zoomRef =useRef(0);
 
   // RESET WHEN SCREEN FOCUSED
   useFocusEffect(
@@ -105,18 +110,35 @@ export default function QRScanner({
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={StyleSheet.absoluteFillObject}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-        onBarcodeScanned={
-          scanned
-            ? undefined
-            : handleBarcodeScanned
-        }
-      />
+    
+    <PinchGestureHandler
+  onGestureEvent={(event) => {
+    const scale = event.nativeEvent.scale;
 
+    let newZoom = zoomRef.current + (scale - 1) * 0.2;
+
+    if (newZoom < 0) newZoom = 0;
+    if (newZoom > 1) newZoom = 1;
+    setZoom(newZoom);
+  
+  }}
+  onEnded={() => {
+  zoomRef.current = zoom;
+}}
+>
+  <CameraView
+    style={StyleSheet.absoluteFillObject}
+    zoom={zoom}
+    barcodeScannerSettings={{
+      barcodeTypes: ["qr"],
+    }}
+    onBarcodeScanned={
+      scanned
+        ? undefined
+        : handleBarcodeScanned
+    }
+  />
+</PinchGestureHandler>
       {/* Bottom */}
       <View style={styles.bottomContainer}>
         <Text style={styles.title}>
