@@ -85,8 +85,8 @@ export default function App() {
   
 useEffect(() => {
   const setupDatabase = async () => {
-    console.log("Clearing DB...");
-    await clearDatabase();
+    // console.log("Clearing DB...");
+    // await clearDatabase();
 
     console.log("Initializing DB...");
     await initDatabase();

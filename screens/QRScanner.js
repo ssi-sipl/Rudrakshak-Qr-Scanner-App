@@ -73,9 +73,7 @@ export default function QRScanner({
     if (
       !parsedData.sensorId ||
       !parsedData.name ||
-      !parsedData.sensorType ||
-      !parsedData.ipAddress ||
-      !parsedData.rtspUrl
+      !parsedData.sensorType
     ) {
 
       alert("Wrong QR Format");
@@ -132,6 +130,7 @@ export default function QRScanner({
   <CameraView
     style={StyleSheet.absoluteFillObject}
     zoom={zoom}
+    autofocus="on"
     barcodeScannerSettings={{
       barcodeTypes: ["qr"],
     }}
